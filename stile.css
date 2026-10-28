@@ -147,5 +147,4 @@ footer{font-size:.8rem;color:var(--muted);display:grid;gap:4px}
 .loading span{background:var(--surface);border:1px solid var(--line);padding:6px 12px;border-radius:999px;font-size:.85rem}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-.leaflet-tile-pane{filter:var(--tile-filter)}
 #btn-gps{justify-self:start}

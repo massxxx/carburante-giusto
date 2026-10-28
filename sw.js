@@ -1,5 +1,5 @@
 // Carburante Giusto: l'app si apre anche senza rete (con gli ultimi prezzi scaricati).
-const VERSIONE = "cg-1";
+const VERSIONE = "cg-2";
 const GUSCIO = ["./", "index.html", "leaflet.js", "manifest.webmanifest", "base/comuni.json", "dati/indice.json", "dati/storico.json",
   "icone/icona-192.png", "icone/icona-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(VERSIONE).then(c => c.addAll(GUSCIO)).then(() => self.skipWaiting())); });

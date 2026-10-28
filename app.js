@@ -30,7 +30,11 @@ let estrDate = null;
 function giorno(q){ // AAAAMMGGhhmm -> Date
   const s = String(q); return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8), +s.slice(8,10), +s.slice(10,12));
 }
-function caricaJSON(u){ return fetch(u, {cache:"no-cache"}).then(r => { if(!r.ok) throw new Error(u+" "+r.status); return r.json(); }); }
+// Nell'app Android i prezzi freschi arrivano dal repository GitHub; quelli dentro l'app servono se manca la rete.
+const REMOTO = "https://raw.githubusercontent.com/massxxx/carburante-giusto/main/";
+const IN_APP = !!window.Capacitor || location.hostname === "localhost" && !location.port;
+let BASE_DATI = "";
+function caricaJSON(u){ if (u.startsWith("dati/")) u = BASE_DATI + u; return fetch(u, {cache:"no-cache"}).then(r => { if(!r.ok) throw new Error(u+" "+r.status); return r.json(); }); }
 function tessera(k){
   if (!tessere.has(k)) tessere.set(k, IND.tessere.includes(k) ? caricaJSON("dati/t/"+k+".json").then(a => a.map(r => ({
     id:r[0], b:r[1], n:r[2], i:r[3], c:r[4], p:r[5], a:r[6], la:r[7], lo:r[8], pr:r[9]
@@ -251,10 +255,16 @@ function iniziaMappa(){
     }, 0);
   });
 }
-let lyTiles = null;
+let lyTiles = null, temaTiles = "";
+function scuro(){ const t = document.documentElement.dataset.theme; return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; }
 async function disegnaBase(){
-  if (!map || lyTiles) return;
-  lyTiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
+  if (!map) return;
+  const tema = scuro() ? "dark_all" : "rastertiles/voyager";
+  if (lyTiles && temaTiles === tema) return;
+  if (lyTiles) map.removeLayer(lyTiles);
+  temaTiles = tema;
+  lyTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/"+tema+"/{z}/{x}/{y}{r}.png", {subdomains:"abcd", maxZoom:19,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>'}).addTo(map);
 }
 function aggiornaComuni(){}
 function disegnaMappa(out){
@@ -309,7 +319,7 @@ function evidenzia(id, apri){
   const m = markers.get(id);
   if (apri && m && map){ map.setView(m.getLatLng(), Math.max(map.getZoom(), 13)); m.openPopup(); }
 }
-function restilizza(){ if (!map) return; disegnaMappa(ULTIMI); }
+function restilizza(){ if (!map) return; disegnaBase(); disegnaMappa(ULTIMI); }
 
 // ---------- comuni ----------
 const norm = s => s.normalize("NFD").replace(/\p{M}/gu,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
@@ -433,6 +443,13 @@ function statoChip(){
 async function avvia(){
   collega(); sincronizzaForm(); iniziaMappa();
   try {
+    if (IN_APP){
+      try {
+        const r = await fetch(REMOTO+"dati/indice.json?t="+Date.now(), {cache:"no-store"});
+        const loc = await fetch("dati/indice.json").then(x => x.json()).catch(() => null);
+        if (r.ok){ const rem = await r.json(); if (!loc || rem.estrazione >= loc.estrazione) BASE_DATI = REMOTO; }
+      } catch(e){}
+    }
     const [ind, com, sto] = await Promise.all([caricaJSON("dati/indice.json"), caricaJSON("base/comuni.json"), caricaJSON("dati/storico.json").catch(()=>[])]);
     IND = ind; COMUNI = com; STORICO = sto; COMUNI_N = COMUNI.map(c => norm(c[0]));
     estrDate = new Date(IND.estrazione+"T23:59:00");
@@ -445,5 +462,5 @@ async function avvia(){
   disegnaBase(); inquadra(); aggiornaComuni(); calcola();
 }
 avvia();
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if (!IN_APP && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
