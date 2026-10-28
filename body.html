@@ -1,0 +1,93 @@
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffd75e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M3 21h13"/><path d="M6 8h7"/><path d="M15 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3"/></svg></div>
+      <div><h1>Carburante Giusto</h1><small>Prezzi ufficiali dei distributori italiani, ogni giorno</small></div>
+    </div>
+    <div class="stato" id="stato"><span class="chip"><span class="dot"></span>Carico i prezzi…</span></div>
+  </header>
+
+  <div class="layout">
+    <div class="col necessita">
+      <section class="panel" aria-labelledby="h-nec">
+        <div class="ptitle"><h2 id="h-nec">Le mie necessità</h2><button class="btn small" id="btn-profilo-nuovo" type="button">+ Veicolo</button></div>
+        <div class="profiles" id="profili" role="group" aria-label="Veicolo"></div>
+
+        <div class="field"><span class="label">Carburante</span>
+          <div class="fuels" id="carburanti" role="group" aria-label="Carburante">
+            <button type="button" data-cat="B">Benzina</button><button type="button" data-cat="G">Gasolio</button><button type="button" data-cat="L">GPL</button>
+            <button type="button" data-cat="M">Metano</button><button type="button" data-cat="H">HVO</button><button type="button" data-cat="N">GNL</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field"><span class="label">Servizio</span>
+            <div class="seg" id="servizio" role="group" aria-label="Servizio">
+              <button type="button" data-v="self">Self</button><button type="button" data-v="servito">Servito</button><button type="button" data-v="tutti">Tutti</button>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <label class="field" for="litri"><span class="label" id="lbl-litri">Quanto ne fai</span><span class="unit"><input id="litri" type="number" min="1" max="500" step="1" inputmode="decimal"><span id="u-litri">litri</span></span></label>
+          <label class="field" for="consumo"><span class="label">Consumo</span><span class="unit"><input id="consumo" type="number" min="1" max="80" step="0.5" inputmode="decimal"><span id="u-consumo">km/l</span></span></label>
+        </div>
+        <label class="check" for="premium"><input type="checkbox" id="premium"> Va bene anche il carburante «speciale» (Blue, Hi-Q, V-Power…)</label>
+
+        <div class="field"><span class="label">Dove cerco</span>
+          <div class="seg" id="modalita" role="group" aria-label="Dove cerco">
+            <button type="button" data-v="vicino">Vicino a me</button><button type="button" data-v="percorso">Sul percorso</button>
+          </div>
+        </div>
+        <div class="field search"><label class="label" for="partenza" id="lbl-partenza">Sono a</label>
+          <input id="partenza" type="search" autocomplete="off" placeholder="Scrivi un comune, es. Parma">
+          <div class="sugg" id="sugg-partenza" hidden></div>
+        </div>
+        <div class="field search" id="box-arrivo" hidden><label class="label" for="arrivo">Vado a</label>
+          <input id="arrivo" type="search" autocomplete="off" placeholder="Scrivi un comune, es. Fornovo di Taro">
+          <div class="sugg" id="sugg-arrivo" hidden></div>
+        </div>
+        <button class="btn" type="button" id="btn-gps">📍 Usa la mia posizione</button>
+        <p class="hint" id="hint-pos">Oppure scrivi un comune o tocca la mappa nel punto esatto.</p>
+        <div class="row">
+          <label class="field" for="raggio"><span class="label" id="lbl-raggio">Al massimo a</span><span class="unit"><input id="raggio" type="number" min="1" max="60" step="1" inputmode="numeric"><span>km</span></span></label>
+        </div>
+
+        <details class="more"><summary>Altre preferenze</summary>
+          <div class="field" style="gap:10px">
+            <label class="check" for="no-autostrada"><input type="checkbox" id="no-autostrada"> Escludi i distributori in autostrada</label>
+            <label class="field" for="giorni"><span class="label">Prezzo comunicato da non più di</span><span class="unit"><input id="giorni" type="number" min="1" max="60" step="1"><span>giorni</span></span></label>
+            <label class="field" for="escludi"><span class="label">Marche da escludere (separate da virgola)</span><input id="escludi" type="text" placeholder="es. Esso, Q8"></label>
+            <label class="field" for="nome-profilo"><span class="label">Nome del veicolo</span><input id="nome-profilo" type="text" maxlength="30"></label>
+            <button class="btn small" type="button" id="btn-profilo-elimina">Elimina questo veicolo</button>
+          </div>
+        </details>
+      </section>
+    </div>
+
+    <div class="mapbox">
+      <div id="map" role="region" aria-label="Mappa dei distributori"></div>
+      <div class="legend" id="legenda"><span><i class="tier" style="background:var(--good)"></i>economici</span><span><i class="tier" style="background:var(--mid)"></i>nella media</span><span><i class="tier" style="background:var(--bad)"></i>cari</span></div>
+      <div class="maphint" id="maphint" hidden></div>
+      <div class="loading" id="loading" hidden><span>Carico i distributori…</span></div>
+    </div>
+
+    <div class="col risultati">
+      <section id="migliore" aria-live="polite"></section>
+      <section class="panel" aria-labelledby="h-lista">
+        <div class="listhead"><h2 id="h-lista">Classifica</h2>
+          <div class="seg" id="ordine" role="group" aria-label="Ordina per"><button type="button" data-v="costo">Spesa vera</button><button type="button" data-v="prezzo">Prezzo</button><button type="button" data-v="distanza">Distanza</button></div>
+        </div>
+        <p class="hint" id="spiega">La spesa vera somma il rifornimento e il carburante che bruci per arrivare al distributore e tornare indietro.</p>
+        <div class="list" id="lista"></div>
+      </section>
+      <section class="panel" aria-labelledby="h-medie">
+        <h2 id="h-medie">Prezzi medi</h2>
+        <div class="stats" id="medie"></div>
+        <div><span class="label">Media Italia nei giorni</span><div id="storico"></div></div>
+      </section>
+      <footer id="fonte">
+        <span>Prezzi: Ministero delle Imprese e del Made in Italy, Osservaprezzi carburanti (open data, licenza IODL 2.0). I gestori sono obbligati a comunicare ogni variazione; il prezzo alla pompa può cambiare durante la giornata.</span>
+        <span>Mappa © OpenStreetMap. Elenco comuni ISTAT via openpolis (CC BY 4.0). Le distanze sono in linea d'aria per 1,3: per la strada vera usa i tasti di navigazione.</span>
+      </footer>
+    </div>
+  </div>
+</div>

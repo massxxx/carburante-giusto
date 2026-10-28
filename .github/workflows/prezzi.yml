@@ -1,0 +1,71 @@
+name: Prezzi del giorno (open data MIMIT)
+
+# Ogni giorno scarica i prezzi ufficiali dei carburanti e aggiorna la cartella dati/.
+# Prima prova il sito del Ministero; se non risponde (succede spesso da GitHub)
+# usa la copia pubblica giornaliera del progetto paolo1957-it/Distributori.
+# Pubblica solo se l'estrazione e' piu' recente e i controlli passano.
+on:
+  schedule:
+    - cron: '41 11 * * *'
+    - cron: '41 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prezzi
+  cancel-in-progress: false
+
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Scarica i file del Ministero
+        id: scarica
+        run: |
+          set -u
+          mkdir -p /tmp/csv
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+          ok=0
+          for base in "https://www.mimit.gov.it/images/exportCSV" "https://github.com/paolo1957-it/Distributori/releases/download/dati-mimit"; do
+            rm -f /tmp/csv/*.csv
+            curl -sSL -m 90 -A "$UA" -o /tmp/csv/anagrafica_impianti_attivi.csv "$base/anagrafica_impianti_attivi.csv" || true
+            curl -sSL -m 90 -A "$UA" -o /tmp/csv/prezzo_alle_8.csv "$base/prezzo_alle_8.csv" || true
+            a=$(stat -c %s /tmp/csv/anagrafica_impianti_attivi.csv 2>/dev/null || echo 0)
+            p=$(stat -c %s /tmp/csv/prezzo_alle_8.csv 2>/dev/null || echo 0)
+            if [ "$a" -gt 1000000 ] && [ "$p" -gt 1000000 ] && head -1 /tmp/csv/prezzo_alle_8.csv | grep -q "Estrazione del"; then
+              echo "fonte=$base" >> "$GITHUB_OUTPUT"; ok=1; break
+            fi
+            echo "Fonte non disponibile: $base"
+          done
+          [ "$ok" = 1 ] || { echo "Nessuna fonte disponibile oggi"; exit 1; }
+          nuova=$(head -1 /tmp/csv/prezzo_alle_8.csv | grep -o '[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}')
+          vecchia=$(python3 -c "import json;print(json.load(open('dati/indice.json'))['estrazione'])" 2>/dev/null || echo "")
+          echo "nuova=$nuova vecchia=$vecchia"
+          if [ -n "$vecchia" ] && [ ! "$nuova" \> "$vecchia" ]; then echo "aggiorna=no" >> "$GITHUB_OUTPUT"; else echo "aggiorna=si" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Prepara i dati
+        if: steps.scarica.outputs.aggiorna == 'si'
+        run: |
+          cp dati/storico.json /tmp/storico_vecchio.json 2>/dev/null || echo "[]" > /tmp/storico_vecchio.json
+          python3 -I aggiorna_dati.py /tmp/csv/anagrafica_impianti_attivi.csv /tmp/csv/prezzo_alle_8.csv /tmp/out /tmp/storico_vecchio.json
+          rm -rf dati && mv /tmp/out/dati dati
+
+      - name: Salva
+        if: steps.scarica.outputs.aggiorna == 'si'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A dati
+          if git diff --cached --quiet; then echo "Niente di nuovo"; exit 0; fi
+          E=$(python3 -c "import json;print(json.load(open('dati/indice.json'))['estrazione'])")
+          git commit -q -m "Prezzi carburante: estrazione del $E"
+          for i in 1 2 3; do git pull -q --rebase && git push -q && exit 0; sleep 10; done
+          exit 1
