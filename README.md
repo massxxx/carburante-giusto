@@ -1,5 +1,7 @@
 # Carburante Giusto
 
+[![Scarica l'APK per Android](https://img.shields.io/badge/Scarica-APK%20Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/massxxx/carburante-giusto/releases/latest/download/CarburanteGiusto.apk)
+
 App per telefono (e PC) con i prezzi ufficiali dei distributori italiani e il distributore più conveniente per il tuo veicolo.
 
 - **Prezzi**: open data del Ministero delle Imprese e del Made in Italy, Osservaprezzi carburanti (licenza IODL 2.0). Aggiornati ogni giorno in automatico da GitHub Actions (`.github/workflows/prezzi.yml`).
